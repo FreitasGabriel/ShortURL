@@ -1,7 +1,6 @@
-import json
 import time
+import unittest
 from datetime import datetime
-import pymongo
 from pymongo import MongoClient
 import hashlib
 
@@ -30,7 +29,7 @@ ret = int(input('Deseja acessar o ShortenURL ou RetrieveURL? (1 - ShortenURL // 
 
 if ret == 1:
 
-    dec = int(input('Deseja customizar a URL? (1 - Sim // 0 - Não)\n '))
+    dec = int(input('Deseja customizar a URL? (1 - Sim // 0 - Não)\n'))
     url = str(input('Digite a URL desejada.\n'))
 
 
@@ -41,13 +40,17 @@ if ret == 1:
         # VERIFICA SE O ALIAS DIGITADO JÁ EXISTE NO BANCO
         verifica = bool(collection.find_one({"alias": {'$in': [c_alias]}}))
 
-        while verifica == True:
+        while verifica == True:#CASO O ALIAS DIGITADO EXISTA, RETORNA ERRO 001 E PEDE UM NOVO ALIAS.
             print('Alias: %s \nERR_CODE: 001\nDescription: CUSTOM ALIAS ALREADY EXIST\n', c_alias)
             c_alias = str(input('Digite outro CUSTOM ALIAS.\n'))
             verifica = bool(collection.find_one({'alias': {'$in': [c_alias]}}))
             encode = url_p + c_alias
     else:
         c_alias = random_key(dt)
+        verifica = bool(collection.find_one({"alias": {'$in': [c_alias]}})) #VERIFICA SE O ALIAS SORTEADO EXISTE
+        while verifica == True: #CASO EXISTA, GERA UM NOVO ALIAS
+            c_alias = random_key(dt)
+            verifica = bool(collection.find_one({'alias': {'$in': [c_alias]}}))
         encode = url_p + c_alias
 
     # INSERINDO NO BANCO DE DADOS
@@ -60,10 +63,30 @@ if ret == 1:
 
 else:
     url = str(input('Digite a URL a ser acessada.'))
-    # VERIFICA SE O ALIAS DIGITADO JÁ EXISTE NO BANCO
+    # VERIFICA SE A URL DIGITADA JÁ EXISTE NO BANCO
     verifica = bool(collection.find_one({"url": {'$in': [url]}}))
     if verifica == False:
         print('ERR_CODE: 002\n Description: SHORTENED URL NOT FOUND')
     else:
         for b in collection.find({"url":url}):
             print(b)
+
+
+
+#TESTE CASES
+
+class teste(unittest.TestCase):
+    def teste_ret(self): #TESTE QUE VERIFICA SE O VALOR RETORNADO É IGUAL A 0 OU 1
+        self.assertTrue(ret==1,"ok")
+        self.assertTrue(ret == 0, "ok")
+        self.assertFalse(ret<0, "Command Invalid")
+        self.assertFalse(ret>1,"Command Invalid")
+
+    def teste_dec(self):  # TESTE QUE VERIFICA SE O VALOR DIGITADO NA FUNÇÃO DE DECIDIR PELO CUSTOM ALIAS É IGUAL A 1 OU 0.
+        self.assertTrue(dec == 1, "ok")
+        self.assertTrue(dec == 0, "ok")
+        self.assertFalse(dec < 0, "Command Invalid")
+        self.assertFalse(dec > 1, "Command Invalid")
+
+    def url_is_null(self):
+        self.assertFalse(url==None, "URL não presente.")
